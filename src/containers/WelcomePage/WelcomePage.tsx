@@ -23,16 +23,16 @@ interface Dot {
   state: State
   inmune: boolean
 }
-const CHANCE_OF_INFECTION = 0.1
-const DISTANCE_FOR_INFECTION = 3
+const CHANCE_OF_INFECTION = 0.3
+const DISTANCE_FOR_INFECTION = 10
 const CHANCE_TO_SURVIVE = 0.95
 const dots: Dot[] = Array.from(Array(1000)).map((_, i) => {
   return {
-    x: Math.random() * 600,
-    y: Math.random() * 600,
+    x: Math.random() * 700,
+    y: Math.random() * 700,
     radius: 3,
-    xMove: i % 2,
-    yMove: i % 2,
+    xMove: Math.random() > 0.5 ? 1 : 0,
+    yMove: Math.random() > 0.5 ? 1 : 0,
     // state: i % 500 === 0 ? State.INFECTED : State.HEALTHY,
     state: State.HEALTHY,
     inmune: false
@@ -73,7 +73,7 @@ const moveDot = (ctx: CanvasRenderingContext2D, dot: Dot, speed: number) => {
               dots[index].state = State.HEALTHY
               dots[index].inmune = true
             }
-          }, 3000)
+          }, 3000 + Math.random() * 10000)
         }
       }
     })
