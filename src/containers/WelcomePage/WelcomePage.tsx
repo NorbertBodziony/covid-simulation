@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/consistent-type-assertions */
 import React, { useEffect, useRef, useState } from 'react'
 import Grid from '@material-ui/core/Grid'
 import Slider from '@material-ui/core/Slider'
@@ -12,40 +13,18 @@ interface Dot {
   yMove: 0 | 1
   color: 'red' | 'blue' | 'green'
 }
-const dots: Dot[] = [
-  { x: Math.random() * 600, y: Math.random() * 600, radius: 25, xMove: 1, yMove: 0, color: 'blue' },
-  { x: Math.random() * 600, y: Math.random() * 600, radius: 25, xMove: 1, yMove: 0, color: 'blue' },
-  { x: Math.random() * 600, y: Math.random() * 600, radius: 25, xMove: 1, yMove: 0, color: 'red' },
-  { x: Math.random() * 600, y: Math.random() * 600, radius: 25, xMove: 1, yMove: 0, color: 'red' },
-  { x: Math.random() * 600, y: Math.random() * 600, radius: 25, xMove: 1, yMove: 0, color: 'red' },
-  { x: Math.random() * 600, y: Math.random() * 600, radius: 25, xMove: 1, yMove: 0, color: 'red' },
-  { x: Math.random() * 600, y: Math.random() * 600, radius: 25, xMove: 1, yMove: 0, color: 'red' },
-  {
+
+const dots: Dot[] = Array.from(Array(2000)).map((_, i) => {
+  return {
     x: Math.random() * 600,
     y: Math.random() * 600,
-    radius: 25,
-    xMove: 1,
-    yMove: 0,
-    color: 'green'
-  },
-  {
-    x: Math.random() * 600,
-    y: Math.random() * 600,
-    radius: 25,
-    xMove: 1,
-    yMove: 0,
-    color: 'green'
-  },
-  {
-    x: Math.random() * 600,
-    y: Math.random() * 600,
-    radius: 25,
-    xMove: 1,
-    yMove: 0,
-    color: 'green'
-  },
-  { x: Math.random() * 600, y: Math.random() * 600, radius: 25, xMove: 1, yMove: 0, color: 'blue' }
-]
+    radius: 3,
+    xMove: i % 2,
+    yMove: i % 2,
+    color: i % 3 === 2 ? 'blue' : i % 3 === 1 ? 'red' : 'green'
+  } as Dot
+})
+console.log(dots.length)
 const moveDot = (ctx: CanvasRenderingContext2D, dot: Dot, speed: number) => {
   if (dot.xMove === 1) {
     dot.x += speed
