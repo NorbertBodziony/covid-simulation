@@ -11,21 +11,14 @@ const useStyles = makeStyles(() =>
       backgroundSize: 'cover',
       backgroundPosition: 'center'
     },
-    contentContainer: {
-      width: '100%'
-    },
-    contentWrapper: {
-      maxWidth: 1360
-    },
-    spacing40: {
-      marginTop: 40
-    },
+
     dots: {
       backgroundColor: 'white',
-      borderRadius: 15,
+      borderRadius: 15
       // width: 600,
       // height: 600
-    }
+    },
+    header: { margin: 20 }
   })
 )
 export default useStyles

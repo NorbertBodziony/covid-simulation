@@ -1,31 +1,51 @@
+/* eslint-disable @typescript-eslint/no-unused-expressions */
 /* eslint-disable @typescript-eslint/consistent-type-assertions */
 import React, { useEffect, useRef, useState } from 'react'
 import Grid from '@material-ui/core/Grid'
 import Slider from '@material-ui/core/Slider'
 import useStyles from './style'
-import Header from '@components/Header/Header'
 import { Typography } from '@material-ui/core'
+import Paper from '@material-ui/core/Paper'
+import { Chart, PieSeries, Legend } from '@devexpress/dx-react-chart-material-ui'
+import { Animation } from '@devexpress/dx-react-chart'
+
+enum State {
+  DEAD,
+  INFECTED,
+  HEALTHY
+}
 interface Dot {
   x: number
   y: number
   radius: number
   xMove: 0 | 1
   yMove: 0 | 1
-  color: 'red' | 'blue' | 'green'
+  state: State
+  inmune: boolean
 }
-
-const dots: Dot[] = Array.from(Array(2000)).map((_, i) => {
+const CHANCE_OF_INFECTION = 0.1
+const DISTANCE_FOR_INFECTION = 3
+const CHANCE_TO_SURVIVE = 0.95
+const dots: Dot[] = Array.from(Array(1000)).map((_, i) => {
   return {
     x: Math.random() * 600,
     y: Math.random() * 600,
     radius: 3,
     xMove: i % 2,
     yMove: i % 2,
-    color: i % 3 === 2 ? 'blue' : i % 3 === 1 ? 'red' : 'green'
+    // state: i % 500 === 0 ? State.INFECTED : State.HEALTHY,
+    state: State.HEALTHY,
+    inmune: false
   } as Dot
 })
-console.log(dots.length)
 const moveDot = (ctx: CanvasRenderingContext2D, dot: Dot, speed: number) => {
+  if (dot.state === State.DEAD) {
+    return
+  }
+  // Random infect
+  if (Math.random() > 0.9999 && !dot.inmune) {
+    dot.state = State.INFECTED
+  }
   if (dot.xMove === 1) {
     dot.x += speed
   } else {
@@ -37,7 +57,27 @@ const moveDot = (ctx: CanvasRenderingContext2D, dot: Dot, speed: number) => {
     dot.y -= speed
   }
   drawDot(ctx, dot)
-
+  if (dot.state === State.INFECTED) {
+    dots.forEach((d, index) => {
+      if (dots[index].inmune) {
+        return
+      }
+      const distance = Math.sqrt((d.x - dot.x) ** 2 + (d.y - dot.y) ** 2)
+      if (distance < DISTANCE_FOR_INFECTION && distance !== 0) {
+        if (Math.random() < CHANCE_OF_INFECTION) {
+          dots[index].state = State.INFECTED
+          setTimeout(() => {
+            if (Math.random() > CHANCE_TO_SURVIVE) {
+              dots[index].state = State.DEAD
+            } else {
+              dots[index].state = State.HEALTHY
+              dots[index].inmune = true
+            }
+          }, 3000)
+        }
+      }
+    })
+  }
   if (dot.x + dot.radius > ctx.canvas.width) {
     dot.xMove = 0
   }
@@ -61,12 +101,13 @@ const draw = (ctx: CanvasRenderingContext2D, frameCount: number, speed: number) 
 function drawDot(ctx: CanvasRenderingContext2D, dot: Dot) {
   ctx.beginPath()
   ctx.arc(dot.x, dot.y, dot.radius, 0, 2 * Math.PI, false)
-  ctx.fillStyle = dot.color
+  ctx.fillStyle = dot.state === State.HEALTHY ? 'green' : 'red'
   ctx.fill()
 }
 const WelcomePage: React.FC = () => {
   const classes = useStyles()
   const [speed, setSpeed] = useState(1)
+  const [temp, forceUpdate] = useState(1)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   useEffect(() => {
     let frameCount = 0
@@ -87,18 +128,19 @@ const WelcomePage: React.FC = () => {
       }
     }
   }, [draw, speed])
-
+  useEffect(() => {
+    setTimeout(() => {
+      forceUpdate(temp + 1)
+    }, 1000)
+  }, [temp])
   return (
-    <Grid container direction='column' className={classes.background} alignItems='center'>
-      <Grid item className={classes.spacing40}>
-        <Header></Header>
+    <Grid container className={classes.background} justify='center' spacing={4}>
+      <Grid item xs={12} className={classes.header}>
+        <Typography color='textPrimary' variant='h2'>
+          Covid-19 simulation
+        </Typography>
       </Grid>
-      <Grid item className={classes.spacing40}>
-        <canvas ref={canvasRef} className={classes.dots} width={600} height={600} id='canv'>
-          Your browser does not support canvas.
-        </canvas>
-      </Grid>
-      <Grid item className={classes.spacing40}>
+      <Grid item>
         <Typography color='textPrimary' gutterBottom>
           Simulation speed
         </Typography>
@@ -115,6 +157,43 @@ const WelcomePage: React.FC = () => {
           min={1}
           max={10}
         />
+        <Paper style={{ backgroundColor: 'inherit' }}>
+          <Chart
+            width={400}
+            data={dots.reduce(
+              (acc, curr) => {
+                if (curr.state === State.HEALTHY) {
+                  if (curr.inmune) {
+                    acc[3].count += 1
+                  } else {
+                    acc[2].count += 1
+                  }
+                }
+                if (curr.state === State.INFECTED) {
+                  acc[0].count += 1
+                }
+                if (curr.state === State.DEAD) {
+                  acc[1].count += 1
+                }
+                return acc
+              },
+              [
+                { name: 'infected', count: 20 },
+                { name: 'dead', count: 10 },
+                { name: 'healthy', count: 0 },
+                { name: 'inmune', count: 0 }
+              ]
+            )}>
+            <PieSeries valueField='count' argumentField='name' />
+            <Legend position='top'></Legend>
+            <Animation />
+          </Chart>
+        </Paper>
+      </Grid>
+      <Grid item>
+        <canvas ref={canvasRef} className={classes.dots} width={700} height={700} id='canv'>
+          Your browser does not support canvas.
+        </canvas>
       </Grid>
     </Grid>
   )
