@@ -19,6 +19,12 @@ const useStyles = makeStyles(() =>
     },
     spacing40: {
       marginTop: 40
+    },
+    dots: {
+      backgroundColor: 'white',
+      borderRadius: 15,
+      // width: 600,
+      // height: 600
     }
   })
 )
