@@ -8,7 +8,7 @@ import { Typography } from '@material-ui/core'
 import Paper from '@material-ui/core/Paper'
 import { Chart, PieSeries, Legend } from '@devexpress/dx-react-chart-material-ui'
 import { Animation } from '@devexpress/dx-react-chart'
-
+import * as R from 'remeda'
 enum State {
   DEAD,
   INFECTED,
@@ -23,10 +23,7 @@ interface Dot {
   state: State
   inmune: boolean
 }
-const CHANCE_OF_INFECTION = 0.3
-const DISTANCE_FOR_INFECTION = 10
-const CHANCE_TO_SURVIVE = 0.95
-const dots: Dot[] = Array.from(Array(1000)).map((_, i) => {
+const dots: Dot[] = Array.from(Array(300)).map((_, i) => {
   return {
     x: Math.random() * 700,
     y: Math.random() * 700,
@@ -38,7 +35,7 @@ const dots: Dot[] = Array.from(Array(1000)).map((_, i) => {
     inmune: false
   } as Dot
 })
-const moveDot = (ctx: CanvasRenderingContext2D, dot: Dot, speed: number) => {
+const moveDot = (ctx: CanvasRenderingContext2D, dot: Dot, variables: IVariables) => {
   if (dot.state === State.DEAD) {
     return
   }
@@ -47,14 +44,14 @@ const moveDot = (ctx: CanvasRenderingContext2D, dot: Dot, speed: number) => {
     dot.state = State.INFECTED
   }
   if (dot.xMove === 1) {
-    dot.x += speed
+    dot.x += variables.speed
   } else {
-    dot.x -= speed
+    dot.x -= variables.speed
   }
   if (dot.yMove === 1) {
-    dot.y += speed
+    dot.y += variables.speed
   } else {
-    dot.y -= speed
+    dot.y -= variables.speed
   }
   drawDot(ctx, dot)
   if (dot.state === State.INFECTED) {
@@ -63,11 +60,11 @@ const moveDot = (ctx: CanvasRenderingContext2D, dot: Dot, speed: number) => {
         return
       }
       const distance = Math.sqrt((d.x - dot.x) ** 2 + (d.y - dot.y) ** 2)
-      if (distance < DISTANCE_FOR_INFECTION && distance !== 0) {
-        if (Math.random() < CHANCE_OF_INFECTION) {
+      if (distance < variables.distanceForInfection && distance !== 0) {
+        if (Math.random() < variables.chanceOfInfection / 100) {
           dots[index].state = State.INFECTED
           setTimeout(() => {
-            if (Math.random() > CHANCE_TO_SURVIVE) {
+            if (Math.random() > variables.chanceToSurvive / 100) {
               dots[index].state = State.DEAD
             } else {
               dots[index].state = State.HEALTHY
@@ -91,11 +88,17 @@ const moveDot = (ctx: CanvasRenderingContext2D, dot: Dot, speed: number) => {
     dot.yMove = 1
   }
 }
-const draw = (ctx: CanvasRenderingContext2D, frameCount: number, speed: number) => {
+interface IVariables {
+  speed: number
+  chanceOfInfection: number
+  distanceForInfection: number
+  chanceToSurvive: number
+}
+const draw = (ctx: CanvasRenderingContext2D, frameCount: number, variables: IVariables) => {
   ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height)
   ctx.fillStyle = '#000000'
   dots.forEach(dot => {
-    moveDot(ctx, dot, speed)
+    moveDot(ctx, dot, variables)
   })
 }
 function drawDot(ctx: CanvasRenderingContext2D, dot: Dot) {
@@ -107,6 +110,9 @@ function drawDot(ctx: CanvasRenderingContext2D, dot: Dot) {
 const WelcomePage: React.FC = () => {
   const classes = useStyles()
   const [speed, setSpeed] = useState(1)
+  const [chanceOfInfection, setChanceOfInfection] = useState(30)
+  const [distanceForInfection, setDistanceForInfection] = useState(10)
+  const [chanceToSurvive, setChanceToSurvive] = useState(95)
   const [temp, forceUpdate] = useState(1)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   useEffect(() => {
@@ -118,7 +124,13 @@ const WelcomePage: React.FC = () => {
       if (context) {
         const render = () => {
           frameCount++
-          draw(context, frameCount, speed)
+          draw(context, frameCount, {
+            speed,
+            chanceOfInfection,
+            distanceForInfection,
+            chanceToSurvive
+          })
+
           animationFrameId = window.requestAnimationFrame(render)
         }
         render()
@@ -127,11 +139,11 @@ const WelcomePage: React.FC = () => {
         }
       }
     }
-  }, [draw, speed])
+  }, [draw, speed, chanceOfInfection, distanceForInfection, chanceToSurvive])
   useEffect(() => {
     setTimeout(() => {
       forceUpdate(temp + 1)
-    }, 1000)
+    }, 2000)
   }, [temp])
   return (
     <Grid container className={classes.background} justify='center' spacing={4}>
@@ -157,33 +169,85 @@ const WelcomePage: React.FC = () => {
           min={1}
           max={10}
         />
+        <Typography color='textPrimary' gutterBottom>
+          Chance for infection
+        </Typography>
+        <Slider
+          style={{ width: 200 }}
+          defaultValue={30}
+          onChange={(_, value) => {
+            setChanceOfInfection(value as number)
+          }}
+          aria-labelledby='discrete-slider'
+          valueLabelDisplay='auto'
+          step={1}
+          marks
+          min={0}
+          max={100}
+        />
+        <Typography color='textPrimary' gutterBottom>
+          Distance for infection
+        </Typography>
+        <Slider
+          style={{ width: 200 }}
+          defaultValue={10}
+          onChange={(_, value) => {
+            setDistanceForInfection(value as number)
+          }}
+          aria-labelledby='discrete-slider'
+          valueLabelDisplay='auto'
+          step={1}
+          marks
+          min={1}
+          max={100}
+        />
+        <Typography color='textPrimary' gutterBottom>
+          Chance to survive
+        </Typography>
+        <Slider
+          style={{ width: 200 }}
+          defaultValue={95}
+          onChange={(_, value) => {
+            setChanceToSurvive(value as number)
+          }}
+          aria-labelledby='discrete-slider'
+          valueLabelDisplay='auto'
+          step={1}
+          marks
+          min={1}
+          max={100}
+        />
         <Paper style={{ backgroundColor: 'inherit' }}>
           <Chart
             width={400}
-            data={dots.reduce(
-              (acc, curr) => {
-                if (curr.state === State.HEALTHY) {
-                  if (curr.inmune) {
-                    acc[3].count += 1
-                  } else {
-                    acc[2].count += 1
+            data={dots
+              .reduce(
+                (acc, curr) => {
+                  if (curr.state === State.HEALTHY) {
+                    if (curr.inmune) {
+                      acc[3].count += 1
+                    } else {
+                      acc[2].count += 1
+                    }
                   }
-                }
-                if (curr.state === State.INFECTED) {
-                  acc[0].count += 1
-                }
-                if (curr.state === State.DEAD) {
-                  acc[1].count += 1
-                }
-                return acc
-              },
-              [
-                { name: 'infected', count: 20 },
-                { name: 'dead', count: 10 },
-                { name: 'healthy', count: 0 },
-                { name: 'inmune', count: 0 }
-              ]
-            )}>
+                  if (curr.state === State.INFECTED) {
+                    acc[0].count += 1
+                  }
+                  if (curr.state === State.DEAD) {
+                    acc[1].count += 1
+                  }
+                  return acc
+                },
+                [
+                  { name: 'infected', count: 0 },
+                  { name: 'dead', count: 0 },
+                  { name: 'healthy', count: 0 },
+                  { name: 'inmune', count: 0 }
+                ]
+              )
+              .map(v => {
+                return { name: `${v.name} ${v.count}`, count: v.count }
+              })}>
             <PieSeries valueField='count' argumentField='name' />
             <Legend position='top'></Legend>
             <Animation />
